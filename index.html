@@ -5,104 +5,143 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Kicker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ═══════════════════════════════════════════
+   RESET & TOKENS
+═══════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --field:   #16312200;
-  --field-s: #1a3a2a;
-  --h:       #2979ff;
-  --j:       #ff3b30;
-  --gold:    #e8c84a;
-  --parchment: #f5f0e8;
-  --line:    rgba(245,240,232,.12);
-  --muted:   rgba(245,240,232,.38);
+  --h:          #3d7fff;
+  --h-dim:      rgba(61,127,255,.18);
+  --h-glow:     rgba(61,127,255,.35);
+  --j:          #ff3d3d;
+  --j-dim:      rgba(255,61,61,.18);
+  --j-glow:     rgba(255,61,61,.35);
+  --bg:         #0a0a0a;
+  --surface:    #111;
+  --rim:        rgba(255,255,255,.07);
+  --rim-strong: rgba(255,255,255,.13);
+  --text:       #f2f2f2;
+  --sub:        rgba(242,242,242,.4);
+  --gold:       #f5c842;
 }
 
-html, body {
-  height: 100%;
-}
+html { height: 100%; }
 
 body {
-  font-family: 'Barlow', sans-serif;
-  background: #162b1e;
-  color: var(--parchment);
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  user-select: none;
 }
 
-/* Field texture via CSS */
-body::before {
-  content: '';
+/* ═══════════════════════════════════════════
+   CANVAS (background particles)
+═══════════════════════════════════════════ */
+#bgCanvas {
   position: fixed;
   inset: 0;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 48px,
-      rgba(255,255,255,.025) 48px,
-      rgba(255,255,255,.025) 96px
-    );
+  width: 100%; height: 100%;
   pointer-events: none;
   z-index: 0;
+  opacity: .5;
 }
 
-/* ── HEADER ── */
-.top-bar {
+/* ═══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
+.header {
   position: relative;
-  z-index: 10;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px 0;
-  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  padding: 14px 18px 0;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
 }
 
-.top-bar .logo {
-  font-family: 'Barlow Condensed', sans-serif;
+.wordmark {
+  font-family: 'Unbounded', sans-serif;
   font-weight: 900;
-  font-size: 1.05rem;
-  letter-spacing: .04em;
-  color: var(--gold);
-  text-decoration: none;
+  font-size: .82rem;
+  letter-spacing: .12em;
+  color: var(--sub);
+  text-transform: uppercase;
 }
 
-.status {
+.connection {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: .78rem;
-  color: var(--muted);
+  gap: 5px;
+  font-size: .72rem;
+  color: var(--sub);
+  font-weight: 500;
 }
 
-.status-dot {
-  width: 7px; height: 7px;
+.dot {
+  width: 6px; height: 6px;
   border-radius: 50%;
-  background: #555;
-  flex-shrink: 0;
+  background: #333;
+  transition: background .4s, box-shadow .4s;
 }
-.status-dot.online  { background: #4cd964; box-shadow: 0 0 6px #4cd964; }
-.status-dot.offline { background: #ff3b30; }
+.dot.live    { background: #3dff7f; box-shadow: 0 0 8px #3dff7f; }
+.dot.offline { background: var(--j); }
 
-/* ── MAIN SCOREBOARD ── */
-.arena {
+/* ═══════════════════════════════════════════
+   LEAD BAR
+═══════════════════════════════════════════ */
+.lead-bar-wrap {
   position: relative;
-  z-index: 10;
+  z-index: 20;
+  padding: 14px 18px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.lead-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: .68rem;
+  font-weight: 600;
+  color: var(--sub);
+  letter-spacing: .04em;
+}
+
+.lead-track {
+  height: 4px;
+  background: var(--rim);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.lead-fill {
+  position: absolute;
+  top: 0; bottom: 0;
+  transition: left .4s cubic-bezier(.22,1,.36,1), right .4s cubic-bezier(.22,1,.36,1), background .4s;
+  border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════════
+   SCOREBOARD
+═══════════════════════════════════════════ */
+.board {
+  position: relative;
+  z-index: 20;
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 3px 1fr;
+  grid-template-columns: 1fr 40px 1fr;
   min-height: 0;
-}
-
-.divider-line {
-  background: var(--line);
-  align-self: stretch;
-  margin: 32px 0;
+  padding: 8px 0 0;
 }
 
 .side {
@@ -110,117 +149,179 @@ body::before {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 28px 16px 20px;
-  gap: 0;
   position: relative;
-  cursor: default;
+  overflow: hidden;
+  padding: 16px 12px;
 }
 
-/* Colored glow per side */
-.side.h::after {
-  content: '';
+/* per-side ambient glow */
+.side.h { background: radial-gradient(ellipse 80% 60% at 50% 55%, var(--h-dim), transparent 70%); }
+.side.j { background: radial-gradient(ellipse 80% 60% at 50% 55%, var(--j-dim), transparent 70%); }
+
+/* ripple canvas per side */
+.side canvas {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 70% 50% at 50% 60%, rgba(41,121,255,.13), transparent);
-  pointer-events: none;
-}
-.side.j::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 70% 50% at 50% 60%, rgba(255,59,48,.13), transparent);
+  width: 100%; height: 100%;
   pointer-events: none;
 }
 
-.player-name {
-  font-family: 'Barlow Condensed', sans-serif;
+.p-name {
+  font-family: 'Unbounded', sans-serif;
   font-weight: 700;
-  font-size: clamp(1.1rem, 5vw, 1.45rem);
+  font-size: clamp(.72rem, 3.2vw, .9rem);
   letter-spacing: .06em;
-  margin-bottom: 4px;
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  margin-bottom: 6px;
 }
 
-.side.h .player-name { color: var(--h); }
-.side.j .player-name { color: var(--j); }
+.side.h .p-name { color: var(--h); }
+.side.j .p-name { color: var(--j); }
 
-.score-num {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900;
-  font-size: clamp(7rem, 26vw, 11rem);
-  line-height: .9;
-  letter-spacing: -.02em;
+/* Flip-digit score */
+.score-wrap {
   position: relative;
-  z-index: 1;
-  transition: transform .08s ease;
+  z-index: 2;
+  perspective: 600px;
+}
+
+.score-digit {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: clamp(6.5rem, 24vw, 10.5rem);
+  line-height: 1;
+  letter-spacing: -.04em;
+  display: block;
+  transform-origin: center bottom;
+  transition: transform .12s ease, opacity .12s ease;
   will-change: transform;
 }
 
-.score-num.punch {
-  transform: scale(1.18);
+.score-digit.flip-out {
+  animation: flipOut .13s ease forwards;
+}
+.score-digit.flip-in {
+  animation: flipIn .13s ease forwards;
 }
 
-.side.h .score-num { color: var(--parchment); }
-.side.j .score-num { color: var(--parchment); }
+@keyframes flipOut {
+  to { transform: rotateX(90deg) scaleY(.8); opacity: 0; }
+}
+@keyframes flipIn {
+  from { transform: rotateX(-90deg) scaleY(.8); opacity: 0; }
+  to   { transform: rotateX(0) scaleY(1); opacity: 1; }
+}
 
-/* Goal tally marks below score */
-.tally {
+.side.h .score-digit { color: var(--text); text-shadow: 0 0 60px var(--h-glow); }
+.side.j .score-digit { color: var(--text); text-shadow: 0 0 60px var(--j-glow); }
+
+/* Goal dots */
+.goals-pip {
+  position: relative;
+  z-index: 2;
   display: flex;
-  gap: 4px;
   flex-wrap: wrap;
   justify-content: center;
-  min-height: 14px;
-  max-width: 140px;
-  margin-top: 8px;
-  position: relative;
-  z-index: 1;
+  gap: 5px;
+  max-width: 120px;
+  margin-top: 10px;
+  min-height: 12px;
 }
 
-.tally-mark {
-  width: 3px;
-  height: 14px;
-  border-radius: 2px;
-  opacity: .55;
+.pip {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  opacity: .5;
+  transition: opacity .2s, transform .2s;
 }
 
-.side.h .tally-mark { background: var(--h); }
-.side.j .tally-mark { background: var(--j); }
+.pip.active { opacity: 1; transform: scale(1.2); }
 
-/* ── CONTROLS ── */
+.side.h .pip { background: var(--h); }
+.side.j .pip { background: var(--j); }
+
+/* center divider */
+.center-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  z-index: 20;
+}
+
+.vs-text {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: .65rem;
+  color: var(--sub);
+  letter-spacing: .1em;
+}
+
+.center-line {
+  width: 1px;
+  flex: 1;
+  background: var(--rim);
+  max-height: 60px;
+}
+
+/* ═══════════════════════════════════════════
+   GOAL BUTTONS — big tactile zones
+═══════════════════════════════════════════ */
 .controls {
   position: relative;
-  z-index: 10;
+  z-index: 20;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--rim);
 }
 
-.ctrl-col {
+.ctrl {
   display: flex;
   flex-direction: column;
 }
 
-.ctrl-col.h { border-right: 1px solid var(--line); }
+.ctrl.h { border-right: 1px solid var(--rim); }
 
 .btn-goal {
   border: none;
-  background: none;
-  color: var(--parchment);
-  font-family: 'Barlow Condensed', sans-serif;
+  background: transparent;
+  font-family: 'Unbounded', sans-serif;
   font-weight: 900;
-  font-size: 2.2rem;
   cursor: pointer;
-  padding: 18px;
-  border-bottom: 1px solid var(--line);
-  transition: background .12s;
-  -webkit-tap-highlight-color: transparent;
   position: relative;
   overflow: hidden;
+  transition: background .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px;
+  border-bottom: 1px solid var(--rim);
 }
 
-.btn-goal::after {
+.btn-goal:last-child { border-bottom: none; }
+
+.btn-goal .btn-label {
+  font-size: clamp(1rem, 4.5vw, 1.3rem);
+  letter-spacing: -.02em;
+  position: relative;
+  z-index: 1;
+}
+
+.btn-goal .btn-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: .65rem;
+  font-weight: 500;
+  letter-spacing: .05em;
+  color: var(--sub);
+  position: relative;
+  z-index: 1;
+}
+
+/* Ripple on tap */
+.btn-goal::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -228,299 +329,312 @@ body::before {
   opacity: 0;
   transition: opacity .12s;
 }
+.btn-goal:active::before { opacity: .07; }
 
-.btn-goal:active::after { opacity: .08; }
+.ctrl.h .btn-goal.plus  .btn-label { color: var(--h); font-size: clamp(1.3rem, 5.5vw, 1.7rem); }
+.ctrl.h .btn-goal.minus .btn-label { color: var(--sub); }
+.ctrl.j .btn-goal.plus  .btn-label { color: var(--j); font-size: clamp(1.3rem, 5.5vw, 1.7rem); }
+.ctrl.j .btn-goal.minus .btn-label { color: var(--sub); }
 
-.ctrl-col.h .btn-goal.plus  { color: var(--h); }
-.ctrl-col.h .btn-goal.minus { color: var(--muted); font-size: 1.5rem; }
-.ctrl-col.j .btn-goal.plus  { color: var(--j); }
-.ctrl-col.j .btn-goal.minus { color: var(--muted); font-size: 1.5rem; }
-
-/* ── BOTTOM ACTIONS ── */
-.bottom-actions {
+/* ═══════════════════════════════════════════
+   STATS BAR
+═══════════════════════════════════════════ */
+.stats-row {
   position: relative;
-  z-index: 10;
-  display: flex;
-  gap: 0;
-  border-top: 1px solid var(--line);
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border-top: 1px solid var(--rim);
+  border-bottom: 1px solid var(--rim);
 }
 
-.action-btn {
+.stat-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 6px;
+  border-right: 1px solid var(--rim);
+  gap: 2px;
+}
+
+.stat-cell:last-child { border-right: none; }
+
+.stat-val {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 700;
+  font-size: clamp(.85rem, 3.5vw, 1.05rem);
+}
+
+.stat-label {
+  font-size: .6rem;
+  font-weight: 500;
+  color: var(--sub);
+  letter-spacing: .05em;
+  text-align: center;
+}
+
+.stat-val.h { color: var(--h); }
+.stat-val.j { color: var(--j); }
+.stat-val.neutral { color: var(--sub); }
+
+/* ═══════════════════════════════════════════
+   ACTION ROW
+═══════════════════════════════════════════ */
+.actions {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  border-bottom: 1px solid var(--rim);
+}
+
+.act-btn {
   flex: 1;
   border: none;
-  background: none;
-  color: var(--muted);
-  font-family: 'Barlow', sans-serif;
-  font-weight: 600;
-  font-size: .8rem;
-  padding: 14px 8px;
-  cursor: pointer;
-  transition: color .15s;
-  -webkit-tap-highlight-color: transparent;
-  border-right: 1px solid var(--line);
-  letter-spacing: .02em;
-}
-.action-btn:last-child { border-right: none; }
-.action-btn:hover, .action-btn:active { color: var(--parchment); }
-.action-btn.save { color: var(--gold); }
-.action-btn.save:hover { color: #f0d768; }
-
-/* ── HISTORY DRAWER ── */
-.history-toggle {
-  position: relative;
-  z-index: 10;
-  width: 100%;
-  border: none;
-  background: none;
-  color: var(--muted);
-  font-family: 'Barlow', sans-serif;
-  font-size: .78rem;
-  font-weight: 600;
-  letter-spacing: .05em;
-  padding: 10px 20px;
-  cursor: pointer;
-  text-align: center;
-  border-top: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.history-toggle .arrow {
-  display: inline-block;
-  transition: transform .2s;
-  font-style: normal;
-}
-
-.history-toggle.open .arrow { transform: rotate(180deg); }
-
-.history-panel {
-  position: relative;
-  z-index: 10;
-  display: none;
-  flex-direction: column;
-  border-top: 1px solid var(--line);
-  max-height: 280px;
-  overflow-y: auto;
-}
-
-.history-panel.open { display: flex; }
-
-.history-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 20px;
-  border-bottom: 1px solid var(--line);
-  font-size: .85rem;
-}
-
-.history-item:last-child { border-bottom: none; }
-
-.hist-score {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--parchment);
-  letter-spacing: .04em;
-}
-
-.hist-winner {
-  font-size: .8rem;
-  font-weight: 600;
-}
-.hist-winner.h { color: var(--h); }
-.hist-winner.j { color: var(--j); }
-.hist-winner.draw { color: var(--muted); }
-
-.hist-time { font-size: .74rem; color: var(--muted); text-align: right; }
-
-.history-empty {
-  padding: 20px;
-  text-align: center;
-  color: var(--muted);
-  font-size: .85rem;
-}
-
-/* ── WIN OVERLAY ── */
-.overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(14, 24, 18, .93);
-  backdrop-filter: blur(8px);
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  text-align: center;
-  padding: 32px 24px;
-}
-
-.overlay.show { display: flex; }
-
-.overlay-score-big {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900;
-  font-size: clamp(5rem, 22vw, 9rem);
-  line-height: 1;
-  letter-spacing: -.02em;
-  color: var(--parchment);
-}
-
-.overlay-winner-label {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: clamp(1.6rem, 7vw, 2.4rem);
-  font-weight: 700;
-  letter-spacing: .05em;
-  margin-top: 4px;
-}
-
-.overlay-winner-label.h { color: var(--h); }
-.overlay-winner-label.j { color: var(--j); }
-
-.overlay-trophy {
-  font-size: 3.2rem;
-  line-height: 1;
-}
-
-.overlay-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 16px;
-  width: 100%;
-  max-width: 280px;
-}
-
-.ov-btn {
-  border: none;
-  border-radius: 6px;
-  font-family: 'Barlow', sans-serif;
-  font-weight: 600;
-  font-size: .95rem;
-  padding: 13px;
-  cursor: pointer;
-  letter-spacing: .02em;
-}
-
-.ov-btn.primary {
-  background: var(--gold);
-  color: #1a1a1a;
-}
-
-.ov-btn.secondary {
   background: transparent;
-  color: var(--muted);
-  border: 1px solid var(--line);
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: .72rem;
+  letter-spacing: .03em;
+  color: var(--sub);
+  padding: 12px 6px;
+  cursor: pointer;
+  border-right: 1px solid var(--rim);
+  transition: color .15s, background .15s;
 }
 
-/* ── TOAST ── */
+.act-btn:last-child { border-right: none; }
+.act-btn:active { background: var(--rim); color: var(--text); }
+.act-btn.gold { color: var(--gold); }
+.act-btn.gold:active { color: #ffd84a; }
+
+/* ═══════════════════════════════════════════
+   HISTORY
+═══════════════════════════════════════════ */
+.hist-toggle {
+  position: relative;
+  z-index: 20;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--sub);
+  font-family: 'Inter', sans-serif;
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  padding: 10px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--rim);
+  text-transform: uppercase;
+  transition: color .15s;
+}
+
+.hist-toggle:hover { color: var(--text); }
+
+.hist-arrow {
+  font-style: normal;
+  display: inline-block;
+  transition: transform .22s cubic-bezier(.22,1,.36,1);
+}
+
+.hist-toggle.open .hist-arrow { transform: rotate(180deg); }
+
+.hist-panel {
+  position: relative;
+  z-index: 20;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .3s cubic-bezier(.22,1,.36,1);
+}
+
+.hist-panel.open { max-height: 300px; overflow-y: auto; }
+
+.hist-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--rim);
+  font-size: .8rem;
+}
+
+.hist-score-text {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 700;
+  font-size: .9rem;
+  color: var(--text);
+}
+
+.hist-win {
+  font-size: .7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.hist-win.h { background: var(--h-dim); color: var(--h); }
+.hist-win.j { background: var(--j-dim); color: var(--j); }
+.hist-win.draw { background: var(--rim); color: var(--sub); }
+
+.hist-time-text { font-size: .68rem; color: var(--sub); text-align: right; }
+
+.hist-empty {
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--sub);
+  font-size: .8rem;
+}
+
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
 .toast {
   position: fixed;
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--parchment);
-  color: #1a1a1a;
-  font-family: 'Barlow', sans-serif;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--text);
+  color: var(--bg);
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
-  font-size: .85rem;
-  padding: 9px 18px;
-  border-radius: 6px;
+  font-size: .82rem;
+  padding: 8px 16px;
+  border-radius: 4px;
   opacity: 0;
-  transition: opacity .2s, transform .2s;
   pointer-events: none;
-  z-index: 300;
+  z-index: 600;
   white-space: nowrap;
+  transition: opacity .2s, transform .2s;
 }
-
-.toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 @media (prefers-reduced-motion: reduce) {
-  .score-num, .toast, .history-toggle .arrow { transition: none; }
+  *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
 }
 </style>
 </head>
 <body>
 
-<div class="top-bar">
-  <span class="logo">Kicker</span>
-  <div class="status">
-    <div class="status-dot" id="statusDot"></div>
-    <span id="statusLabel">verbinden…</span>
+<canvas id="bgCanvas"></canvas>
+
+<!-- HEADER -->
+<div class="header">
+  <span class="wordmark">Kicker</span>
+  <div class="connection">
+    <div class="dot" id="dot"></div>
+    <span id="connLabel">…</span>
   </div>
 </div>
 
-<div class="arena">
-  <!-- HENDRIK -->
+<!-- LEAD BAR -->
+<div class="lead-bar-wrap">
+  <div class="lead-label">
+    <span id="leadH" style="color:var(--h)">Hendrik</span>
+    <span id="leadText" style="color:var(--sub)">0 : 0</span>
+    <span id="leadJ" style="color:var(--j)">Jakob</span>
+  </div>
+  <div class="lead-track">
+    <div class="lead-fill" id="leadFill" style="left:50%;right:50%;background:var(--rim)"></div>
+  </div>
+</div>
+
+<!-- BOARD -->
+<div class="board">
   <div class="side h">
-    <div class="player-name">Hendrik</div>
-    <div class="score-num" id="scoreH">0</div>
-    <div class="tally" id="tallyH"></div>
+    <canvas id="rippleH"></canvas>
+    <div class="p-name">Hendrik</div>
+    <div class="score-wrap">
+      <span class="score-digit" id="scoreH">0</span>
+    </div>
+    <div class="goals-pip" id="pipH"></div>
   </div>
 
-  <div class="divider-line"></div>
+  <div class="center-col">
+    <div class="center-line"></div>
+    <span class="vs-text">VS</span>
+    <div class="center-line"></div>
+  </div>
 
-  <!-- JAKOB -->
   <div class="side j">
-    <div class="player-name">Jakob</div>
-    <div class="score-num" id="scoreJ">0</div>
-    <div class="tally" id="tallyJ"></div>
+    <canvas id="rippleJ"></canvas>
+    <div class="p-name">Jakob</div>
+    <div class="score-wrap">
+      <span class="score-digit" id="scoreJ">0</span>
+    </div>
+    <div class="goals-pip" id="pipJ"></div>
   </div>
 </div>
 
+<!-- CONTROLS -->
 <div class="controls">
-  <div class="ctrl-col h">
-    <button class="btn-goal plus"  onclick="changeScore('h', 1)"  aria-label="Tor Hendrik">+1</button>
-    <button class="btn-goal minus" onclick="changeScore('h', -1)" aria-label="Tor zurück Hendrik">−1</button>
+  <div class="ctrl h">
+    <button class="btn-goal plus" onclick="changeScore('h',1)">
+      <span class="btn-label">+1</span>
+      <span class="btn-sub">Tor</span>
+    </button>
+    <button class="btn-goal minus" onclick="changeScore('h',-1)">
+      <span class="btn-label">−1</span>
+      <span class="btn-sub">Korrektur</span>
+    </button>
   </div>
-  <div class="ctrl-col j">
-    <button class="btn-goal plus"  onclick="changeScore('j', 1)"  aria-label="Tor Jakob">+1</button>
-    <button class="btn-goal minus" onclick="changeScore('j', -1)" aria-label="Tor zurück Jakob">−1</button>
+  <div class="ctrl j">
+    <button class="btn-goal plus" onclick="changeScore('j',1)">
+      <span class="btn-label">+1</span>
+      <span class="btn-sub">Tor</span>
+    </button>
+    <button class="btn-goal minus" onclick="changeScore('j',-1)">
+      <span class="btn-label">−1</span>
+      <span class="btn-sub">Korrektur</span>
+    </button>
   </div>
 </div>
 
-<div class="bottom-actions">
-  <button class="action-btn save" onclick="saveGame()">Speichern</button>
-  <button class="action-btn"     onclick="resetScore()">Neues Spiel</button>
-  <button class="action-btn"     onclick="clearHistory()">Verlauf löschen</button>
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-cell">
+    <span class="stat-val" id="statWinsH" style="color:var(--h)">0</span>
+    <span class="stat-label">Siege H</span>
+  </div>
+  <div class="stat-cell">
+    <span class="stat-val neutral" id="statGames">0</span>
+    <span class="stat-label">Partien</span>
+  </div>
+  <div class="stat-cell">
+    <span class="stat-val" id="statWinsJ" style="color:var(--j)">0</span>
+    <span class="stat-label">Siege J</span>
+  </div>
 </div>
 
-<button class="history-toggle" id="historyToggle" onclick="toggleHistory()">
-  Verlauf <i class="arrow">▾</i>
+<!-- ACTIONS -->
+<div class="actions">
+  <button class="act-btn gold" onclick="saveGame()">Speichern</button>
+  <button class="act-btn"     onclick="resetScore()">Neu</button>
+  <button class="act-btn"     onclick="clearHistory()">Löschen</button>
+</div>
+
+<!-- HISTORY -->
+<button class="hist-toggle" id="histToggle" onclick="toggleHist()">
+  Verlauf
+  <i class="hist-arrow">▾</i>
 </button>
-
-<div class="history-panel" id="historyPanel">
-  <div class="history-empty" id="historyEmpty">Noch keine Partien.</div>
+<div class="hist-panel" id="histPanel">
+  <div class="hist-empty" id="histEmpty">Noch keine Partien.</div>
 </div>
 
-<!-- WIN OVERLAY -->
-<div class="overlay" id="winOverlay">
-  <div class="overlay-trophy">🏆</div>
-  <div class="overlay-score-big" id="overlayScore"></div>
-  <div class="overlay-winner-label" id="overlayWinner"></div>
-  <div class="overlay-actions">
-    <button class="ov-btn primary"    onclick="saveAndNew()">Speichern & neu</button>
-    <button class="ov-btn secondary"  onclick="closeOverlay()">Weiter spielen</button>
-  </div>
-</div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, onValue, get }
+import { getDatabase, ref, set, onValue }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-const firebaseConfig = {
+/* ── CONFIG ── */
+const FB = {
   apiKey:            "AIzaSyBu5PrwcxOErX46y1CskANyEbVJNSqBrzI",
   authDomain:        "kicker-41854.firebaseapp.com",
   databaseURL:       "https://kicker-41854-default-rtdb.firebaseio.com",
@@ -529,119 +643,228 @@ const firebaseConfig = {
   messagingSenderId: "634456262042",
   appId:             "1:634456262042:web:15110a3de7fbeb10782623",
 };
-
-const WIN_SCORE = 10;
-
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
-
+const db = getDatabase(initializeApp(FB));
 const scoreRef   = ref(db, "score");
 const historyRef = ref(db, "history");
 
-// Elements
-const scoreHEl    = document.getElementById("scoreH");
-const scoreJEl    = document.getElementById("scoreJ");
-const tallyHEl    = document.getElementById("tallyH");
-const tallyJEl    = document.getElementById("tallyJ");
-const historyPanel = document.getElementById("historyPanel");
-const historyEmpty = document.getElementById("historyEmpty");
-const historyToggle = document.getElementById("historyToggle");
-const overlay      = document.getElementById("winOverlay");
-const overlayScore = document.getElementById("overlayScore");
-const overlayWinner = document.getElementById("overlayWinner");
-const statusDot   = document.getElementById("statusDot");
-const statusLabel = document.getElementById("statusLabel");
-const toastEl     = document.getElementById("toast");
-
+/* ── STATE ── */
 let state = { h: 0, j: 0 };
 let history = {};
-let winHandled = false;
 
-// Connection
-onValue(ref(db, ".info/connected"), snap => {
-  const online = snap.val();
-  statusDot.className = "status-dot " + (online ? "online" : "offline");
-  statusLabel.textContent = online ? "live" : "offline";
-});
+/* ── DOM ── */
+const $ = id => document.getElementById(id);
+const scoreHEl = $("scoreH"), scoreJEl = $("scoreJ");
+const pipHEl   = $("pipH"),   pipJEl   = $("pipJ");
+const leadFill = $("leadFill"), leadText = $("leadText");
+const statWH   = $("statWinsH"), statWJ = $("statWinsJ"), statGm = $("statGames");
+const dot      = $("dot"), connLabel = $("connLabel");
+const histPanel = $("histPanel"), histToggle = $("histToggle"), histEmpty = $("histEmpty");
 
-// Score listener
-onValue(scoreRef, snap => {
-  const val = snap.val() || { h: 0, j: 0 };
-  updateScoreUI(val);
-  state = val;
-  checkWin(val);
-});
+const toastEl  = $("toast");
 
-// History listener
-onValue(historyRef, snap => {
-  history = snap.val() || {};
-  renderHistory();
-});
+/* ═══════════════════════════════════
+   BACKGROUND PARTICLE CANVAS
+═══════════════════════════════════ */
+(function initBg() {
+  const cv = $("bgCanvas");
+  const ctx = cv.getContext("2d");
+  let W, H, particles = [];
 
-function updateScoreUI(s) {
-  scoreHEl.textContent = s.h;
-  scoreJEl.textContent = s.j;
-  renderTally(tallyHEl, s.h, 'h');
-  renderTally(tallyJEl, s.j, 'j');
+  function resize() {
+    W = cv.width  = innerWidth;
+    H = cv.height = innerHeight;
+  }
+
+  class Particle {
+    constructor() { this.reset(); }
+    reset() {
+      this.x  = Math.random() * W;
+      this.y  = Math.random() * H;
+      this.r  = Math.random() * 1.4 + .4;
+      this.vx = (Math.random() - .5) * .18;
+      this.vy = (Math.random() - .5) * .18;
+      this.a  = Math.random() * .35 + .05;
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${this.a})`;
+      ctx.fill();
+    }
+    update() {
+      this.x += this.vx; this.y += this.vy;
+      if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+    }
+  }
+
+  function init() {
+    resize();
+    particles = Array.from({ length: 80 }, () => new Particle());
+  }
+
+  function loop() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => { p.update(); p.draw(); });
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener("resize", resize);
+  init(); loop();
+})();
+
+/* ═══════════════════════════════════
+   RIPPLE CANVAS (per side)
+═══════════════════════════════════ */
+function makeRipple(canvasId, color) {
+  const cv  = $(canvasId);
+  const ctx = cv.getContext("2d");
+  let rings = [];
+
+  function resize() {
+    cv.width  = cv.offsetWidth;
+    cv.height = cv.offsetHeight;
+  }
+
+  function loop() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    rings = rings.filter(r => r.a > .01);
+    rings.forEach(r => {
+      r.radius += 3.5;
+      r.a *= .93;
+      ctx.beginPath();
+      ctx.arc(cv.width / 2, cv.height * .55, r.radius, 0, Math.PI * 2);
+      ctx.strokeStyle = color.replace(")", `,${r.a})`).replace("rgb", "rgba");
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+    requestAnimationFrame(loop);
+  }
+
+  new ResizeObserver(resize).observe(cv);
+  resize(); loop();
+
+  return function trigger() {
+    rings.push({ radius: 20, a: .7 });
+  };
 }
 
-function renderTally(el, count, side) {
-  el.innerHTML = '';
-  for (let i = 0; i < Math.min(count, WIN_SCORE); i++) {
-    const m = document.createElement('div');
-    m.className = 'tally-mark';
-    el.appendChild(m);
+const triggerRippleH = makeRipple("rippleH", "rgb(61,127,255)");
+const triggerRippleJ = makeRipple("rippleJ", "rgb(255,61,61)");
+
+/* ═══════════════════════════════════
+   SCORE FLIP ANIMATION
+═══════════════════════════════════ */
+function flipScore(el, newVal) {
+  const cur = el.textContent;
+  if (cur === String(newVal)) return;
+  el.classList.remove("flip-in", "flip-out");
+  void el.offsetWidth;
+  el.classList.add("flip-out");
+  setTimeout(() => {
+    el.textContent = newVal;
+    el.classList.remove("flip-out");
+    el.classList.add("flip-in");
+    setTimeout(() => el.classList.remove("flip-in"), 150);
+  }, 120);
+}
+
+/* ═══════════════════════════════════
+   LEAD BAR
+═══════════════════════════════════ */
+function updateLeadBar(s) {
+  leadText.textContent = s.h + " : " + s.j;
+  const total = Math.max(s.h + s.j, 1);
+  if (s.h === s.j) {
+    leadFill.style.left  = "50%";
+    leadFill.style.right = "50%";
+    leadFill.style.background = "var(--rim)";
+  } else if (s.h > s.j) {
+    const pct = (s.h / (s.h + s.j)) * 100;
+    leadFill.style.left  = "0%";
+    leadFill.style.right = (100 - pct) + "%";
+    leadFill.style.background = "var(--h)";
+  } else {
+    const pct = (s.j / (s.h + s.j)) * 100;
+    leadFill.style.right = "0%";
+    leadFill.style.left  = (100 - pct) + "%";
+    leadFill.style.background = "var(--j)";
   }
 }
 
-function punch(el) {
-  el.classList.remove('punch');
-  void el.offsetWidth;
-  el.classList.add('punch');
-  setTimeout(() => el.classList.remove('punch'), 120);
+/* ═══════════════════════════════════
+   PIPS
+═══════════════════════════════════ */
+function renderPips(el, count) {
+  el.innerHTML = "";
+  for (let i = 0; i < count; i++) {
+    const d = document.createElement("div");
+    d.className = "pip active";
+    el.appendChild(d);
+  }
 }
 
+/* ═══════════════════════════════════
+   STATS
+═══════════════════════════════════ */
+function updateStats() {
+  const entries = Object.values(history);
+  const total = entries.length;
+  const wH = entries.filter(e => e.winner === "h").length;
+  const wJ = entries.filter(e => e.winner === "j").length;
+  statWH.textContent = wH;
+  statWJ.textContent = wJ;
+  statGm.textContent = total;
+}
+
+/* ═══════════════════════════════════
+   FIREBASE LISTENERS
+═══════════════════════════════════ */
+onValue(ref(db, ".info/connected"), snap => {
+  const ok = snap.val();
+  dot.className   = "dot " + (ok ? "live" : "offline");
+  connLabel.textContent = ok ? "live" : "offline";
+});
+
+onValue(scoreRef, snap => {
+  const v = snap.val() || { h: 0, j: 0 };
+  const prevH = state.h, prevJ = state.j;
+  state = v;
+  flipScore(scoreHEl, v.h);
+  flipScore(scoreJEl, v.j);
+  renderPips(pipHEl, v.h);
+  renderPips(pipJEl, v.j);
+  updateLeadBar(v);
+  if (v.h > prevH) triggerRippleH();
+  if (v.j > prevJ) triggerRippleJ();
+});
+
+onValue(historyRef, snap => {
+  history = snap.val() || {};
+  updateStats();
+  renderHistory();
+});
+
+/* ═══════════════════════════════════
+   GAME LOGIC
+═══════════════════════════════════ */
 window.changeScore = function(player, delta) {
   const next = Math.max(0, state[player] + delta);
   if (next === state[player]) return;
   state[player] = next;
-  winHandled = false;
-  if (delta > 0) punch(player === 'h' ? scoreHEl : scoreJEl);
+  if (navigator.vibrate) navigator.vibrate(delta > 0 ? [18] : [8, 40, 8]);
   set(scoreRef, state);
 };
 
-function checkWin(s) {
-  if (!winHandled && (s.h >= WIN_SCORE || s.j >= WIN_SCORE)) {
-    winHandled = true;
-    const hWins = s.h >= WIN_SCORE;
-    overlayScore.textContent = s.h + " : " + s.j;
-    overlayWinner.textContent = (hWins ? "Hendrik" : "Jakob") + " gewinnt";
-    overlayWinner.className = "overlay-winner-label " + (hWins ? "h" : "j");
-    overlay.classList.add("show");
-  }
-}
-
-window.closeOverlay = function() {
-  overlay.classList.remove("show");
-};
-
-window.saveAndNew = function() {
-  saveGame(true);
-  overlay.classList.remove("show");
-};
 
 window.saveGame = function(silent) {
-  if (state.h === 0 && state.j === 0) {
-    showToast("Kein Score zum Speichern.");
-    return;
-  }
+  if (state.h === 0 && state.j === 0) { showToast("Score ist 0:0."); return; }
   const id = Date.now().toString();
   const winner = state.h > state.j ? "h" : state.j > state.h ? "j" : "draw";
   set(ref(db, "history/" + id), {
     h: state.h, j: state.j, winner,
     ts: new Date().toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })
   });
-  if (!silent) showToast("Partie gespeichert.");
+  if (!silent) showToast("Gespeichert.");
   resetScore(true);
 };
 
@@ -652,40 +875,42 @@ window.resetScore = function(silent) {
 };
 
 window.clearHistory = function() {
-  if (!confirm("Verlauf wirklich löschen?")) return;
+  if (!confirm("Gesamten Verlauf löschen?")) return;
   set(historyRef, null);
   showToast("Verlauf gelöscht.");
 };
 
-window.toggleHistory = function() {
-  const open = historyPanel.classList.toggle("open");
-  historyToggle.classList.toggle("open", open);
+
+
+window.toggleHist = function() {
+  const open = histPanel.classList.toggle("open");
+  histToggle.classList.toggle("open", open);
 };
 
+/* ═══════════════════════════════════
+   HISTORY RENDER
+═══════════════════════════════════ */
 function renderHistory() {
+  while (histPanel.children.length > 1) histPanel.removeChild(histPanel.lastChild);
   const entries = Object.entries(history).sort((a, b) => b[0] - a[0]);
-  // Remove old items
-  while (historyPanel.children.length > 1) historyPanel.removeChild(historyPanel.lastChild);
-
-  if (entries.length === 0) {
-    historyEmpty.style.display = '';
-    return;
-  }
-  historyEmpty.style.display = 'none';
-
+  if (!entries.length) { histEmpty.style.display = ""; return; }
+  histEmpty.style.display = "none";
   entries.forEach(([, e]) => {
-    const el = document.createElement('div');
-    el.className = 'history-item';
-    const winName = e.winner === 'h' ? 'Hendrik' : e.winner === 'j' ? 'Jakob' : 'Unentschieden';
-    el.innerHTML = `
-      <span class="hist-score">${e.h} : ${e.j}</span>
-      <span class="hist-winner ${e.winner}">${winName}</span>
-      <span class="hist-time">${e.ts}</span>
-    `;
-    historyPanel.appendChild(el);
+    const row = document.createElement("div");
+    row.className = "hist-row";
+    const wLabel = e.winner === "h" ? "Hendrik" : e.winner === "j" ? "Jakob" : "Unentschieden";
+    row.innerHTML = `
+      <span class="hist-score-text">${e.h} : ${e.j}</span>
+      <span class="hist-win ${e.winner}">${wLabel}</span>
+      <span class="hist-time-text">${e.ts}</span>`;
+    histPanel.appendChild(row);
   });
 }
 
+
+/* ═══════════════════════════════════
+   TOAST
+═══════════════════════════════════ */
 let toastTimer;
 function showToast(msg) {
   toastEl.textContent = msg;
