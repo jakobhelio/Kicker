@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Kicker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --field:   #16312200;
+  --field-s: #1a3a2a;
+  --h:       #2979ff;
+  --j:       #ff3b30;
+  --gold:    #e8c84a;
+  --parchment: #f5f0e8;
+  --line:    rgba(245,240,232,.12);
+  --muted:   rgba(245,240,232,.38);
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Barlow', sans-serif;
+  background: #162b1e;
+  color: var(--parchment);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Field texture via CSS */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 48px,
+      rgba(255,255,255,.025) 48px,
+      rgba(255,255,255,.025) 96px
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+.top-bar {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 0;
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+}
+
+.top-bar .logo {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 1.05rem;
+  letter-spacing: .04em;
+  color: var(--gold);
+  text-decoration: none;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .78rem;
+  color: var(--muted);
+}
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #555;
+  flex-shrink: 0;
+}
+.status-dot.online  { background: #4cd964; box-shadow: 0 0 6px #4cd964; }
+.status-dot.offline { background: #ff3b30; }
+
+/* ── MAIN SCOREBOARD ── */
+.arena {
+  position: relative;
+  z-index: 10;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 3px 1fr;
+  min-height: 0;
+}
+
+.divider-line {
+  background: var(--line);
+  align-self: stretch;
+  margin: 32px 0;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px 20px;
+  gap: 0;
+  position: relative;
+  cursor: default;
+}
+
+/* Colored glow per side */
+.side.h::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 50% at 50% 60%, rgba(41,121,255,.13), transparent);
+  pointer-events: none;
+}
+.side.j::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 50% at 50% 60%, rgba(255,59,48,.13), transparent);
+  pointer-events: none;
+}
+
+.player-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.1rem, 5vw, 1.45rem);
+  letter-spacing: .06em;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.side.h .player-name { color: var(--h); }
+.side.j .player-name { color: var(--j); }
+
+.score-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(7rem, 26vw, 11rem);
+  line-height: .9;
+  letter-spacing: -.02em;
+  position: relative;
+  z-index: 1;
+  transition: transform .08s ease;
+  will-change: transform;
+}
+
+.score-num.punch {
+  transform: scale(1.18);
+}
+
+.side.h .score-num { color: var(--parchment); }
+.side.j .score-num { color: var(--parchment); }
+
+/* Goal tally marks below score */
+.tally {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-height: 14px;
+  max-width: 140px;
+  margin-top: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.tally-mark {
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: .55;
+}
+
+.side.h .tally-mark { background: var(--h); }
+.side.j .tally-mark { background: var(--j); }
+
+/* ── CONTROLS ── */
+.controls {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+
+.ctrl-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.ctrl-col.h { border-right: 1px solid var(--line); }
+
+.btn-goal {
+  border: none;
+  background: none;
+  color: var(--parchment);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 2.2rem;
+  cursor: pointer;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+  transition: background .12s;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-goal::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity .12s;
+}
+
+.btn-goal:active::after { opacity: .08; }
+
+.ctrl-col.h .btn-goal.plus  { color: var(--h); }
+.ctrl-col.h .btn-goal.minus { color: var(--muted); font-size: 1.5rem; }
+.ctrl-col.j .btn-goal.plus  { color: var(--j); }
+.ctrl-col.j .btn-goal.minus { color: var(--muted); font-size: 1.5rem; }
+
+/* ── BOTTOM ACTIONS ── */
+.bottom-actions {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+
+.action-btn {
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-family: 'Barlow', sans-serif;
+  font-weight: 600;
+  font-size: .8rem;
+  padding: 14px 8px;
+  cursor: pointer;
+  transition: color .15s;
+  -webkit-tap-highlight-color: transparent;
+  border-right: 1px solid var(--line);
+  letter-spacing: .02em;
+}
+.action-btn:last-child { border-right: none; }
+.action-btn:hover, .action-btn:active { color: var(--parchment); }
+.action-btn.save { color: var(--gold); }
+.action-btn.save:hover { color: #f0d768; }
+
+/* ── HISTORY DRAWER ── */
+.history-toggle {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-family: 'Barlow', sans-serif;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  padding: 10px 20px;
+  cursor: pointer;
+  text-align: center;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.history-toggle .arrow {
+  display: inline-block;
+  transition: transform .2s;
+  font-style: normal;
+}
+
+.history-toggle.open .arrow { transform: rotate(180deg); }
+
+.history-panel {
+  position: relative;
+  z-index: 10;
+  display: none;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.history-panel.open { display: flex; }
+
+.history-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: .85rem;
+}
+
+.history-item:last-child { border-bottom: none; }
+
+.hist-score {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--parchment);
+  letter-spacing: .04em;
+}
+
+.hist-winner {
+  font-size: .8rem;
+  font-weight: 600;
+}
+.hist-winner.h { color: var(--h); }
+.hist-winner.j { color: var(--j); }
+.hist-winner.draw { color: var(--muted); }
+
+.hist-time { font-size: .74rem; color: var(--muted); text-align: right; }
+
+.history-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+/* ── WIN OVERLAY ── */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(14, 24, 18, .93);
+  backdrop-filter: blur(8px);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.overlay.show { display: flex; }
+
+.overlay-score-big {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(5rem, 22vw, 9rem);
+  line-height: 1;
+  letter-spacing: -.02em;
+  color: var(--parchment);
+}
+
+.overlay-winner-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(1.6rem, 7vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: .05em;
+  margin-top: 4px;
+}
+
+.overlay-winner-label.h { color: var(--h); }
+.overlay-winner-label.j { color: var(--j); }
+
+.overlay-trophy {
+  font-size: 3.2rem;
+  line-height: 1;
+}
+
+.overlay-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.ov-btn {
+  border: none;
+  border-radius: 6px;
+  font-family: 'Barlow', sans-serif;
+  font-weight: 600;
+  font-size: .95rem;
+  padding: 13px;
+  cursor: pointer;
+  letter-spacing: .02em;
+}
+
+.ov-btn.primary {
+  background: var(--gold);
+  color: #1a1a1a;
+}
+
+.ov-btn.secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--parchment);
+  color: #1a1a1a;
+  font-family: 'Barlow', sans-serif;
+  font-weight: 600;
+  font-size: .85rem;
+  padding: 9px 18px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity .2s, transform .2s;
+  pointer-events: none;
+  z-index: 300;
+  white-space: nowrap;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .score-num, .toast, .history-toggle .arrow { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="logo">Kicker</span>
+  <div class="status">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusLabel">verbinden…</span>
+  </div>
+</div>
+
+<div class="arena">
+  <!-- HENDRIK -->
+  <div class="side h">
+    <div class="player-name">Hendrik</div>
+    <div class="score-num" id="scoreH">0</div>
+    <div class="tally" id="tallyH"></div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- JAKOB -->
+  <div class="side j">
+    <div class="player-name">Jakob</div>
+    <div class="score-num" id="scoreJ">0</div>
+    <div class="tally" id="tallyJ"></div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="ctrl-col h">
+    <button class="btn-goal plus"  onclick="changeScore('h', 1)"  aria-label="Tor Hendrik">+1</button>
+    <button class="btn-goal minus" onclick="changeScore('h', -1)" aria-label="Tor zurück Hendrik">−1</button>
+  </div>
+  <div class="ctrl-col j">
+    <button class="btn-goal plus"  onclick="changeScore('j', 1)"  aria-label="Tor Jakob">+1</button>
+    <button class="btn-goal minus" onclick="changeScore('j', -1)" aria-label="Tor zurück Jakob">−1</button>
+  </div>
+</div>
+
+<div class="bottom-actions">
+  <button class="action-btn save" onclick="saveGame()">Speichern</button>
+  <button class="action-btn"     onclick="resetScore()">Neues Spiel</button>
+  <button class="action-btn"     onclick="clearHistory()">Verlauf löschen</button>
+</div>
+
+<button class="history-toggle" id="historyToggle" onclick="toggleHistory()">
+  Verlauf <i class="arrow">▾</i>
+</button>
+
+<div class="history-panel" id="historyPanel">
+  <div class="history-empty" id="historyEmpty">Noch keine Partien.</div>
+</div>
+
+<!-- WIN OVERLAY -->
+<div class="overlay" id="winOverlay">
+  <div class="overlay-trophy">🏆</div>
+  <div class="overlay-score-big" id="overlayScore"></div>
+  <div class="overlay-winner-label" id="overlayWinner"></div>
+  <div class="overlay-actions">
+    <button class="ov-btn primary"    onclick="saveAndNew()">Speichern & neu</button>
+    <button class="ov-btn secondary"  onclick="closeOverlay()">Weiter spielen</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, onValue, get }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyBu5PrwcxOErX46y1CskANyEbVJNSqBrzI",
+  authDomain:        "kicker-41854.firebaseapp.com",
+  databaseURL:       "https://kicker-41854-default-rtdb.firebaseio.com",
+  projectId:         "kicker-41854",
+  storageBucket:     "kicker-41854.firebasestorage.app",
+  messagingSenderId: "634456262042",
+  appId:             "1:634456262042:web:15110a3de7fbeb10782623",
+};
+
+const WIN_SCORE = 10;
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+const scoreRef   = ref(db, "score");
+const historyRef = ref(db, "history");
+
+// Elements
+const scoreHEl    = document.getElementById("scoreH");
+const scoreJEl    = document.getElementById("scoreJ");
+const tallyHEl    = document.getElementById("tallyH");
+const tallyJEl    = document.getElementById("tallyJ");
+const historyPanel = document.getElementById("historyPanel");
+const historyEmpty = document.getElementById("historyEmpty");
+const historyToggle = document.getElementById("historyToggle");
+const overlay      = document.getElementById("winOverlay");
+const overlayScore = document.getElementById("overlayScore");
+const overlayWinner = document.getElementById("overlayWinner");
+const statusDot   = document.getElementById("statusDot");
+const statusLabel = document.getElementById("statusLabel");
+const toastEl     = document.getElementById("toast");
+
+let state = { h: 0, j: 0 };
+let history = {};
+let winHandled = false;
+
+// Connection
+onValue(ref(db, ".info/connected"), snap => {
+  const online = snap.val();
+  statusDot.className = "status-dot " + (online ? "online" : "offline");
+  statusLabel.textContent = online ? "live" : "offline";
+});
+
+// Score listener
+onValue(scoreRef, snap => {
+  const val = snap.val() || { h: 0, j: 0 };
+  updateScoreUI(val);
+  state = val;
+  checkWin(val);
+});
+
+// History listener
+onValue(historyRef, snap => {
+  history = snap.val() || {};
+  renderHistory();
+});
+
+function updateScoreUI(s) {
+  scoreHEl.textContent = s.h;
+  scoreJEl.textContent = s.j;
+  renderTally(tallyHEl, s.h, 'h');
+  renderTally(tallyJEl, s.j, 'j');
+}
+
+function renderTally(el, count, side) {
+  el.innerHTML = '';
+  for (let i = 0; i < Math.min(count, WIN_SCORE); i++) {
+    const m = document.createElement('div');
+    m.className = 'tally-mark';
+    el.appendChild(m);
+  }
+}
+
+function punch(el) {
+  el.classList.remove('punch');
+  void el.offsetWidth;
+  el.classList.add('punch');
+  setTimeout(() => el.classList.remove('punch'), 120);
+}
+
+window.changeScore = function(player, delta) {
+  const next = Math.max(0, state[player] + delta);
+  if (next === state[player]) return;
+  state[player] = next;
+  winHandled = false;
+  if (delta > 0) punch(player === 'h' ? scoreHEl : scoreJEl);
+  set(scoreRef, state);
+};
+
+function checkWin(s) {
+  if (!winHandled && (s.h >= WIN_SCORE || s.j >= WIN_SCORE)) {
+    winHandled = true;
+    const hWins = s.h >= WIN_SCORE;
+    overlayScore.textContent = s.h + " : " + s.j;
+    overlayWinner.textContent = (hWins ? "Hendrik" : "Jakob") + " gewinnt";
+    overlayWinner.className = "overlay-winner-label " + (hWins ? "h" : "j");
+    overlay.classList.add("show");
+  }
+}
+
+window.closeOverlay = function() {
+  overlay.classList.remove("show");
+};
+
+window.saveAndNew = function() {
+  saveGame(true);
+  overlay.classList.remove("show");
+};
+
+window.saveGame = function(silent) {
+  if (state.h === 0 && state.j === 0) {
+    showToast("Kein Score zum Speichern.");
+    return;
+  }
+  const id = Date.now().toString();
+  const winner = state.h > state.j ? "h" : state.j > state.h ? "j" : "draw";
+  set(ref(db, "history/" + id), {
+    h: state.h, j: state.j, winner,
+    ts: new Date().toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })
+  });
+  if (!silent) showToast("Partie gespeichert.");
+  resetScore(true);
+};
+
+window.resetScore = function(silent) {
+  winHandled = false;
+  set(scoreRef, { h: 0, j: 0 });
+  if (!silent) showToast("Neues Spiel.");
+};
+
+window.clearHistory = function() {
+  if (!confirm("Verlauf wirklich löschen?")) return;
+  set(historyRef, null);
+  showToast("Verlauf gelöscht.");
+};
+
+window.toggleHistory = function() {
+  const open = historyPanel.classList.toggle("open");
+  historyToggle.classList.toggle("open", open);
+};
+
+function renderHistory() {
+  const entries = Object.entries(history).sort((a, b) => b[0] - a[0]);
+  // Remove old items
+  while (historyPanel.children.length > 1) historyPanel.removeChild(historyPanel.lastChild);
+
+  if (entries.length === 0) {
+    historyEmpty.style.display = '';
+    return;
+  }
+  historyEmpty.style.display = 'none';
+
+  entries.forEach(([, e]) => {
+    const el = document.createElement('div');
+    el.className = 'history-item';
+    const winName = e.winner === 'h' ? 'Hendrik' : e.winner === 'j' ? 'Jakob' : 'Unentschieden';
+    el.innerHTML = `
+      <span class="hist-score">${e.h} : ${e.j}</span>
+      <span class="hist-winner ${e.winner}">${winName}</span>
+      <span class="hist-time">${e.ts}</span>
+    `;
+    historyPanel.appendChild(el);
+  });
+}
+
+let toastTimer;
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2000);
+}
+</script>
+</body>
+</html>
