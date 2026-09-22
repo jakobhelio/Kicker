@@ -796,9 +796,9 @@ function updateLeadBar(s) {
 ═══════════════════════════════════ */
 function renderPips(el, count) {
   el.innerHTML = "";
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < 15; i++) {
     const d = document.createElement("div");
-    d.className = "pip active";
+    d.className = "pip" + (i < count ? " active" : "");
     el.appendChild(d);
   }
 }
@@ -808,12 +808,11 @@ function renderPips(el, count) {
 ═══════════════════════════════════ */
 function updateStats() {
   const entries = Object.values(history);
-  const total = entries.length;
-  const wH = entries.filter(e => e.winner === "h").length;
-  const wJ = entries.filter(e => e.winner === "j").length;
+  const wH = entries.reduce((sum, e) => sum + (e.h || 0), 0);
+  const wJ = entries.reduce((sum, e) => sum + (e.j || 0), 0);
   statWH.textContent = wH;
   statWJ.textContent = wJ;
-  statGm.textContent = total;
+  statGm.textContent = entries.length;
 }
 
 /* ═══════════════════════════════════
